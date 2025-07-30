@@ -2,16 +2,51 @@
 try:
     import yaml
 except ImportError:
-    print("ERROR: install pyyaml package.")
+    print("ERROR: install the pyyaml package.")
     exit(1)
 
+import argparse
 from pathlib import Path
 
-containers_folder = "containers"
-composes_folder = "composes"
+parser = argparse.ArgumentParser(description="Docker compose generator.")
+parser.add_argument(
+    "--containers",
+    type=str,
+    help="Containers folder",
+    default="containers"
+)
+parser.add_argument(
+    "--composes",
+    type=str,
+    help="Composes folder",
+    default="composes"
+)
+parser.add_argument(
+    "--network",
+    type=str,
+    help="The network for composes",
+    default="test_network"
+)
+parser.add_argument(
+    "--subnet",
+    type=str,
+    help="The subnet for the composes' network",
+    default="172.20.0.0/24"
+)
+parser.add_argument(
+    "-o",
+    "--output",
+    type=str,
+    help="The docker compose output file",
+    default="docker-compose.yaml"
+)
+args = parser.parse_args()
 
-network = "test_network"
-subnet = "172.20.0.0/24"
+containers_folder = args.containers
+composes_folder = args.composes
+
+network = args.network
+subnet = args.subnet
 gateway = subnet.rsplit(".", 1)[0] + ".1"
 
 template = f"""
@@ -74,5 +109,5 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
 
 template += "\n"
 
-with open("docker-compose.yaml", "w") as f:
+with open(args.output, "w") as f:
     f.write(template)
