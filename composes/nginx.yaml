@@ -1,0 +1,19 @@
+services:
+  nginx:
+    image: lscr.io/linuxserver/nginx:latest
+    hostname: nginx
+    container_name: nginx
+    restart: unless-stopped
+    volumes:
+    - /home/docker/Docker/Nginx:/config
+    - /home/docker/Docker/SSL:/config/keys
+    environment:
+    - PUID=32011
+    - PGID=32011
+    - TZ=Asia/Tehran
+    - NGINX_AUTORELOAD=true
+    ports:
+    - 80:80/tcp
+    - 443:443/tcp
+    networks:
+    - test_network

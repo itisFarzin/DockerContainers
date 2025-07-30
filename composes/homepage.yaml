@@ -1,0 +1,15 @@
+services:
+  homepage:
+    image: ghcr.io/gethomepage/homepage:latest
+    hostname: homepage
+    container_name: homepage
+    restart: unless-stopped
+    volumes:
+    - /home/docker/Docker/Homepage/config:/app/config
+    - /home/docker/Docker/Homepage/icons:/app/public/icons
+    environment:
+    - HOMEPAGE_ALLOWED_HOSTS=homepage.server.local
+    - PUID=32011
+    - PGID=32011
+    networks:
+    - test_network

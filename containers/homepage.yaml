@@ -1,0 +1,8 @@
+image: ghcr.io/gethomepage/homepage:latest
+volumes:
+- /home/docker/Docker/Homepage/config:/app/config
+- /home/docker/Docker/Homepage/icons:/app/public/icons
+environment:
+- HOMEPAGE_ALLOWED_HOSTS=homepage.server.local
+- PUID=32011
+- PGID=32011
