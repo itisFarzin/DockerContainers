@@ -1,6 +1,6 @@
 image: lscr.io/linuxserver/nginx:latest
 volumes:
-- /home/docker/Docker/Nginx:/config
+- /config
 - /home/docker/Docker/SSL:/config/keys
 environment:
 - PUID=32011

@@ -34,6 +34,12 @@ parser.add_argument(
     default="172.20.0.0/24"
 )
 parser.add_argument(
+    "--bind-path",
+    type=str,
+    help="The base path for binding containers' volumes",
+    default="/home/docker/Docker"
+)
+parser.add_argument(
     "-o",
     "--output",
     type=str,
@@ -90,7 +96,29 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
             service["services"][name]["command"] = command
 
         if volumes := data.get("volumes"):
-            service["services"][name]["volumes"] = volumes
+            _volumes = []
+            used_volumes = []
+            for volume in volumes:
+                parts = volume.rsplit(":")
+                suffix = parts[-1] if parts[-1] in {"ro", "rw"} else None
+
+                if suffix:
+                    parts = parts[:-1]
+
+                if len(parts) == 1:
+                    _volume = parts[0].rsplit("/")[-1]
+                    if _volume in used_volumes:
+                        _volume = f"{_volume}{used_volumes.count(_volume)+1}"
+
+                    parts = [f"{args.bind_path}/{name}/{_volume}", parts[0]]
+
+                if suffix:
+                    parts.append(suffix)
+
+                used_volumes.append(parts[0].rsplit("/")[-1])
+                _volumes.append(":".join(parts))
+
+            service["services"][name]["volumes"] = _volumes
 
         if environment := data.get("environment"):
             service["services"][name]["environment"] = environment
@@ -107,7 +135,5 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
             name=name, path=composes_folder + "/" + path.name
         )
 
-template += "\n"
-
 with open(args.output, "w") as f:
-    f.write(template)
+    f.write(template + "\n")
