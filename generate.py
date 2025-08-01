@@ -34,6 +34,12 @@ parser.add_argument(
     default="172.20.0.0/24"
 )
 parser.add_argument(
+    "--use-full-directory",
+    help="Use full directory binding if no other volumes exist",
+    default=True,
+    action=argparse.BooleanOptionalAction
+)
+parser.add_argument(
     "--bind-path",
     type=str,
     help="The base path for binding containers' volumes",
@@ -98,6 +104,17 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
         if volumes := data.get("volumes"):
             _volumes = []
             used_volumes = []
+            custom_binds = list(filter(
+                lambda volume: (
+                    (split_volume := volume.split(":")) and
+                    (len(split_volume) == 1 or (
+                        len(split_volume) == 2
+                        and split_volume[-1] in {"ro", "rw"}
+                    ))
+                ),
+                volumes
+            ))
+
             for volume in volumes:
                 cname = ""
                 if ";" in volume:
@@ -110,11 +127,18 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
                     parts = parts[:-1]
 
                 if len(parts) == 1:
+                    _path = f"{args.bind_path}/{name}"
                     _volume = cname or parts[0].rsplit("/")[-1]
+
                     if _volume in used_volumes:
                         _volume = f"{_volume}{used_volumes.count(_volume)+1}"
 
-                    parts = [f"{args.bind_path}/{name}/{_volume}", parts[0]]
+                    if not (
+                        args.use_full_directory and len(custom_binds) == 1
+                    ):
+                        _path += f"/{_volume}"
+
+                    parts = [_path, parts[0]]
 
                 if suffix:
                     parts.append(suffix)
