@@ -99,6 +99,10 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
             _volumes = []
             used_volumes = []
             for volume in volumes:
+                cname = ""
+                if ";" in volume:
+                    volume, cname = volume.split(";")
+
                 parts = volume.rsplit(":")
                 suffix = parts[-1] if parts[-1] in {"ro", "rw"} else None
 
@@ -106,7 +110,7 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
                     parts = parts[:-1]
 
                 if len(parts) == 1:
-                    _volume = parts[0].rsplit("/")[-1]
+                    _volume = cname or parts[0].rsplit("/")[-1]
                     if _volume in used_volumes:
                         _volume = f"{_volume}{used_volumes.count(_volume)+1}"
 
