@@ -30,6 +30,14 @@ jobs:
 
       - name: Run Python script
         run: python generate.py
+        env:
+          CONTAINERS_FOLDER: ${{ vars.CONTAINERS_FOLDER }}
+          COMPOSES_FOLDER: ${{ vars.COMPOSES_FOLDER }}
+          NETWORK_NAME: ${{ vars.NETWORK_NAME }}
+          SUBNET: ${{ vars.SUBNET }}
+          USE_FULL_DIRECTORY: ${{ vars.USE_FULL_DIRECTORY }}
+          BIND_PATH: ${{ vars.BIND_PATH }}
+          OUTPUT: ${{ vars.OUTPUT }}
 
       - name: Commit changes
         run: |

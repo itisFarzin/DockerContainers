@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+import os
 try:
     import yaml
 except ImportError:
@@ -10,54 +12,56 @@ from pathlib import Path
 
 parser = argparse.ArgumentParser(description="Docker compose generator.")
 parser.add_argument(
-    "--containers",
+    "--containers-folder",
     type=str,
-    help="Containers folder",
-    default="containers"
+    help="The containers folder",
+    default=os.getenv("CONTAINERS_FOLDER") or "containers"
 )
 parser.add_argument(
-    "--composes",
+    "--composes-folder",
     type=str,
-    help="Composes folder",
-    default="composes"
+    help="The composes folder",
+    default=os.getenv("COMPOSES_FOLDER") or "composes"
 )
 parser.add_argument(
-    "--network",
+    "--network-name",
     type=str,
-    help="The network for composes",
-    default="test_network"
+    help="The network name for the composes",
+    default=os.getenv("NETWORK_NAME") or "test_network"
 )
 parser.add_argument(
     "--subnet",
     type=str,
     help="The subnet for the composes' network",
-    default="172.20.0.0/24"
+    default=os.getenv("SUBNET") or "172.20.0.0/24"
 )
 parser.add_argument(
     "--use-full-directory",
     help="Use full directory binding if no other volumes exist",
-    default=True,
+    default=(
+        os.getenv("USE_FULL_DIRECTORY").lower() or "true"
+    ) in {"true", "1"},
     action=argparse.BooleanOptionalAction
 )
 parser.add_argument(
     "--bind-path",
     type=str,
-    help="The base path for binding containers' volumes",
-    default="/home/docker/Docker"
+    help="The base path for binding the containers' bind volumes",
+    default=os.getenv("BIND_PATH") or "/home/docker/Docker"
 )
 parser.add_argument(
     "-o",
     "--output",
     type=str,
     help="The docker compose output file",
-    default="docker-compose.yaml"
+    default=os.getenv("OUTPUT") or "docker-compose.yaml"
 )
 args = parser.parse_args()
 
-containers_folder = args.containers
-composes_folder = args.composes
+containers_folder = args.containers_folder
+composes_folder = args.composes_folder
 
-network = args.network
+network = args.network_name
 subnet = args.subnet
 gateway = subnet.rsplit(".", 1)[0] + ".1"
 
