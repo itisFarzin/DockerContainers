@@ -98,6 +98,7 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
     with open(path, "r") as f:
         data = yaml.safe_load(f)
         name = data.get("name", path.stem)
+        folder = data.get("folder", name)
         service = yaml.safe_load(
             service_template.format(name=name, image=data["image"])
         )
@@ -131,7 +132,7 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
                     parts = parts[:-1]
 
                 if len(parts) == 1:
-                    _path = f"{args.bind_path}/{name}"
+                    _path = f"{args.bind_path}/{folder}"
                     _volume = cname or parts[0].rsplit("/")[-1]
 
                     if _volume in used_volumes:
