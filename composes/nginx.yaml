@@ -5,7 +5,7 @@ services:
     container_name: nginx
     restart: unless-stopped
     volumes:
-    - /home/docker/Docker/nginx:/config
+    - /home/docker/Docker/Nginx:/config
     - /home/docker/Docker/SSL:/config/keys
     environment:
     - PUID=32011

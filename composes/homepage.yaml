@@ -5,8 +5,8 @@ services:
     container_name: homepage
     restart: unless-stopped
     volumes:
-    - /home/docker/Docker/homepage/config:/app/config
-    - /home/docker/Docker/homepage/icons:/app/public/icons
+    - /home/docker/Docker/Homepage/config:/app/config
+    - /home/docker/Docker/Homepage/icons:/app/public/icons
     environment:
     - HOMEPAGE_ALLOWED_HOSTS=homepage.server.local
     - PUID=32011
