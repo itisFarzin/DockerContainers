@@ -39,8 +39,8 @@ parser.add_argument(
     "--use-full-directory",
     help="Use full directory binding if no other volumes exist",
     default=(
-        os.getenv("USE_FULL_DIRECTORY").lower() or "true"
-    ) in {"true", "1"},
+        (os.getenv("USE_FULL_DIRECTORY") or "true").lower() in {"true", "1"}
+    ) or True,
     action=argparse.BooleanOptionalAction
 )
 parser.add_argument(
