@@ -97,7 +97,7 @@ services:
 for path in sorted(Path(containers_folder).glob("*.yaml")):
     with open(path, "r") as f:
         data = yaml.safe_load(f)
-        name = path.stem
+        name = data.get("name", path.stem)
         service = yaml.safe_load(
             service_template.format(name=name, image=data["image"])
         )
