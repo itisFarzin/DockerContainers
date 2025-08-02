@@ -1,3 +1,4 @@
+folder: Homepage
 image: ghcr.io/gethomepage/homepage:latest
 volumes:
 - /app/config

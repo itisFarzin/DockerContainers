@@ -1,3 +1,4 @@
+folder: Nginx
 image: lscr.io/linuxserver/nginx:latest
 volumes:
 - /config
