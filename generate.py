@@ -7,6 +7,7 @@ except ImportError:
     print("ERROR: install the pyyaml package.")
     exit(1)
 
+import shutil
 import argparse
 from pathlib import Path
 
@@ -93,6 +94,11 @@ services:
     container_name: {name}
     restart: unless-stopped
 """.lstrip()
+
+if os.path.exists(composes_folder):
+    shutil.rmtree(composes_folder)
+
+os.mkdir(composes_folder)
 
 for path in sorted(Path(containers_folder).glob("*.yaml")):
     with open(path, "r") as f:
