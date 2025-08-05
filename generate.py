@@ -106,6 +106,9 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
         if command := data.get("command"):
             service["services"][name]["command"] = command
 
+        if entrypoint := data.get("entrypoint"):
+            service["services"][name]["entrypoint"] = entrypoint
+
         if volumes := data.get("volumes"):
             _volumes = []
             used_volumes = []
