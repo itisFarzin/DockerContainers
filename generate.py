@@ -43,6 +43,12 @@ parser.add_argument(
     default=os.getenv("SUBNET") or "172.20.0.0/24"
 )
 parser.add_argument(
+    "--restart-policy",
+    type=str,
+    help="The restart policy for containers",
+    default=os.getenv("RESTART_POLICY") or "unless-stopped"
+)
+parser.add_argument(
     "--use-full-directory",
     help="Use full directory binding if no other volumes exist",
     default=(
@@ -71,6 +77,7 @@ network: str = args.network_name
 network_driver: str = args.network_driver
 subnet: str = args.subnet
 gateway: str = subnet.rsplit(".", 1)[0] + ".1"
+restart_policy: str = args.restart_policy
 use_full_directory: bool = args.use_full_directory
 bind_path: str = args.bind_path
 output: str = args.output
@@ -98,7 +105,11 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
         name = data.get("name", path.stem)
         folder = data.get("folder", name)
         service: dict[str, dict] = yaml.safe_load(
-            service_template.format(name=name, image=data["image"])
+            service_template.format(
+                name=name,
+                image=data["image"],
+                restart=restart_policy,
+            )
         )
 
         if command := data.get("command"):

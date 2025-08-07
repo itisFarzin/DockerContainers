@@ -3,4 +3,4 @@ services:
     image: {image}
     hostname: {name}
     container_name: {name}
-    restart: unless-stopped
+    restart: {restart}
