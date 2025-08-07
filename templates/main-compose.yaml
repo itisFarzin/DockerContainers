@@ -1,7 +1,7 @@
 services:
 networks:
   {network}:
-    driver: bridge
+    driver: {driver}
     name: {network}
     ipam:
       config:

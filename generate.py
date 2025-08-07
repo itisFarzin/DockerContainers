@@ -25,6 +25,12 @@ parser.add_argument(
     default=os.getenv("COMPOSES_FOLDER") or "composes"
 )
 parser.add_argument(
+    "--network-driver",
+    type=str,
+    help="The network's driver",
+    default=os.getenv("NETWORK_DRIVER") or "bridge"
+)
+parser.add_argument(
     "--network-name",
     type=str,
     help="The network name for the composes",
@@ -62,6 +68,7 @@ args = parser.parse_args()
 containers_folder: str = args.containers_folder
 composes_folder: str = args.composes_folder
 network: str = args.network_name
+network_driver: str = args.network_driver
 subnet: str = args.subnet
 gateway: str = subnet.rsplit(".", 1)[0] + ".1"
 use_full_directory: bool = args.use_full_directory
@@ -71,6 +78,7 @@ output: str = args.output
 main_template = yaml.safe_load(
     open("templates/main-compose.yaml").read().lstrip().format(
         network=network,
+        driver=network_driver,
         subnet=subnet,
         gateway=gateway,
     )
