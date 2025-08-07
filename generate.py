@@ -59,12 +59,14 @@ parser.add_argument(
 )
 args = parser.parse_args()
 
-containers_folder = args.containers_folder
-composes_folder = args.composes_folder
-
-network = args.network_name
-subnet = args.subnet
-gateway = subnet.rsplit(".", 1)[0] + ".1"
+containers_folder: str = args.containers_folder
+composes_folder: str = args.composes_folder
+network: str = args.network_name
+subnet: str = args.subnet
+gateway: str = subnet.rsplit(".", 1)[0] + ".1"
+use_full_directory: bool = args.use_full_directory
+bind_path: str = args.bind_path
+output: str = args.output
 
 template = f"""
 networks:
@@ -102,10 +104,10 @@ os.mkdir(composes_folder)
 
 for path in sorted(Path(containers_folder).glob("*.yaml")):
     with open(path, "r") as f:
-        data = yaml.safe_load(f)
+        data: dict[str, str | list] = yaml.safe_load(f)
         name = data.get("name", path.stem)
         folder = data.get("folder", name)
-        service = yaml.safe_load(
+        service: dict[str, dict] = yaml.safe_load(
             service_template.format(name=name, image=data["image"])
         )
 
@@ -141,15 +143,13 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
                     parts = parts[:-1]
 
                 if len(parts) == 1:
-                    _path = f"{args.bind_path}/{folder}"
+                    _path = f"{bind_path}/{folder}"
                     _volume = cname or parts[0].rsplit("/")[-1]
 
                     if _volume in used_volumes:
                         _volume = f"{_volume}{used_volumes.count(_volume)+1}"
 
-                    if not (
-                        args.use_full_directory and len(custom_binds) == 1
-                    ):
+                    if not (use_full_directory and len(custom_binds) == 1):
                         _path += f"/{_volume}"
 
                     parts = [_path, parts[0]]
@@ -183,5 +183,5 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
             name=name, path=composes_folder + "/" + path.name
         )
 
-with open(args.output, "w") as f:
+with open(output, "w") as f:
     f.write(template + "\n")
