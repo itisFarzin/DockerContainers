@@ -68,40 +68,22 @@ use_full_directory: bool = args.use_full_directory
 bind_path: str = args.bind_path
 output: str = args.output
 
-template = f"""
-networks:
-  {network}:
-    driver: bridge
-    name: {network}
-    ipam:
-      config:
-        - subnet: {subnet}
-          gateway: {gateway}
-
-services:
-""".strip()
-
-apps_template = """
-  {name}:
-    extends:
-      file: {path}
-      service: {name}
-""".rstrip()
-
-service_template = """
-services:
-  {name}:
-    image: {image}
-    hostname: {name}
-    container_name: {name}
-    restart: unless-stopped
-""".lstrip()
+main_template = yaml.safe_load(
+    open("templates/main-compose.yaml").read().lstrip().format(
+        network=network,
+        subnet=subnet,
+        gateway=gateway,
+    )
+)
+composes_template = open("templates/composes.yaml").read().lstrip()
+service_template = open("templates/services.yaml").read().lstrip()
 
 if os.path.exists(composes_folder):
     shutil.rmtree(composes_folder)
 
 os.mkdir(composes_folder)
 
+main_template["services"] = {}
 for path in sorted(Path(containers_folder).glob("*.yaml")):
     with open(path, "r") as f:
         data: dict[str, str | list] = yaml.safe_load(f)
@@ -179,9 +161,11 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
         with open(f"{composes_folder}/{name}.yaml", "w") as file:
             yaml.dump(service, file, sort_keys=False)
 
-        template += apps_template.format(
-            name=name, path=composes_folder + "/" + path.name
+        main_template["services"][name] = yaml.safe_load(
+            composes_template.format(
+                name=name, path=composes_folder + "/" + path.name
+            )
         )
 
 with open(output, "w") as f:
-    f.write(template + "\n")
+    yaml.dump(main_template, f, sort_keys=False)

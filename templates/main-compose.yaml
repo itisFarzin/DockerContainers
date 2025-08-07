@@ -1,0 +1,9 @@
+services:
+networks:
+  {network}:
+    driver: bridge
+    name: {network}
+    ipam:
+      config:
+        - subnet: {subnet}
+          gateway: {gateway}
