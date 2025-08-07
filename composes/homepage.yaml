@@ -13,3 +13,7 @@ services:
     - PGID=32011
     networks:
     - test_network
+networks:
+  test_network:
+    name: test_network
+    external: true

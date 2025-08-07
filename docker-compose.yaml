@@ -1,12 +1,3 @@
-networks:
-  test_network:
-    driver: bridge
-    name: test_network
-    ipam:
-      config:
-        - subnet: 172.20.0.0/24
-          gateway: 172.20.0.1
-
 services:
   homepage:
     extends:
@@ -16,3 +7,11 @@ services:
     extends:
       file: composes/nginx.yaml
       service: nginx
+networks:
+  test_network:
+    driver: bridge
+    name: test_network
+    ipam:
+      config:
+      - subnet: 172.20.0.0/24
+        gateway: 172.20.0.1
