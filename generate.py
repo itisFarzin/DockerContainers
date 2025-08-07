@@ -165,6 +165,9 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
         if environment := data.get("environment"):
             service["services"][name]["environment"] = environment
 
+        if labels := data.get("labels"):
+            service["services"][name]["labels"] = labels
+
         if healthcheck := data.get("healthcheck"):
             service["services"][name]["healthcheck"] = healthcheck
 
