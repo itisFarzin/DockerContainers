@@ -109,6 +109,7 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
                 name=name,
                 image=data["image"],
                 restart=restart_policy,
+                network=network,
             )
         )
 

@@ -4,3 +4,8 @@ services:
     hostname: {name}
     container_name: {name}
     restart: {restart}
+
+networks:
+  {network}:
+    name: {network}
+    external: true
