@@ -119,6 +119,17 @@ for path in sorted(Path(containers_folder).glob("*.yaml")):
         if entrypoint := data.get("entrypoint"):
             service["services"][name]["entrypoint"] = entrypoint
 
+        if devices := data.get("devices"):
+            _devices = []
+            for device in devices:
+                parts = device.rsplit(":")
+                if len(parts) == 1:
+                    parts.append(parts[0])
+
+                _devices.append(":".join(parts))
+
+            service["services"][name]["devices"] = _devices
+
         if volumes := data.get("volumes"):
             _volumes = []
             used_volumes = []
