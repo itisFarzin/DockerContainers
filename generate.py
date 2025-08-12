@@ -99,7 +99,10 @@ if os.path.exists(composes_folder):
 os.mkdir(composes_folder)
 
 main_template["services"] = {}
-for path in sorted(Path(containers_folder).glob("*.yaml")):
+for path in sorted(
+    list(Path(containers_folder).glob("*.yaml"))
+    + list(Path(containers_folder).glob("*.yml"))
+):
     with open(path, "r") as f:
         data: dict[str, str | list] = yaml.safe_load(f)
         name = data.get("name", path.stem)
