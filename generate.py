@@ -103,6 +103,7 @@ main_template["services"] = {}
 def main():
     options = (
         "command",
+        "network_mode",
         "user",
         "entrypoint",
         "cap_add",
@@ -195,7 +196,8 @@ def main():
                         _value.append(":".join(parts))
                 service["services"][name][option] = _value or value
 
-        service["services"][name]["networks"] = [network]
+        if "network_mode" not in data:
+            service["services"][name]["networks"] = [network]
 
         with open(f"{composes_folder}/{name}.yaml", "w") as compose:
             yaml.dump(service, compose, sort_keys=False)
