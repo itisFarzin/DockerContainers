@@ -101,6 +101,22 @@ main_template["services"] = {}
 
 
 def main():
+    options = (
+        "command",
+        "user",
+        "entrypoint",
+        "cap_add",
+        "cap_drop",
+        "sysctls",
+        "labels",
+        "devices",
+        "volumes",
+        "environment",
+        "depends_on"
+        "healthcheck",
+        "ports",
+    )
+
     for path in sorted(
         list(Path(containers_folder).glob("*.yaml"))
         + list(Path(containers_folder).glob("*.yml"))
@@ -118,79 +134,66 @@ def main():
             )
         )
 
-        if command := data.get("command"):
-            service["services"][name]["command"] = command
+        used_volumes = []
 
-        if entrypoint := data.get("entrypoint"):
-            service["services"][name]["entrypoint"] = entrypoint
+        for option in options:
+            if value := data.get(option):
+                _value = []
+                if option == "devices":
+                    for device in value:
+                        parts = device.rsplit(":")
+                        if len(parts) == 1:
+                            parts.append(parts[0])
 
-        if devices := data.get("devices"):
-            _devices = []
-            for device in devices:
-                parts = device.rsplit(":")
-                if len(parts) == 1:
-                    parts.append(parts[0])
-
-                _devices.append(":".join(parts))
-
-            service["services"][name]["devices"] = _devices
-
-        if volumes := data.get("volumes"):
-            _volumes = []
-            used_volumes = []
-            custom_binds = list(filter(
-                lambda volume: (
-                    (split_volume := volume.split(":")) and
-                    (len(split_volume) == 1 or (
-                        len(split_volume) == 2
-                        and split_volume[-1] in {"ro", "rw"}
+                        _value.append(":".join(parts))
+                elif option == "volumes":
+                    custom_binds = list(filter(
+                        lambda volume: (
+                            (split_volume := volume.split(":")) and
+                            (len(split_volume) == 1 or (
+                                len(split_volume) == 2
+                                and split_volume[-1] in {"ro", "rw"}
+                            ))
+                        ),
+                        value
                     ))
-                ),
-                volumes
-            ))
 
-            for volume in volumes:
-                cname = ""
-                if ";" in volume:
-                    volume, cname = volume.split(";")
+                    for volume in value:
+                        cname = ""
+                        if ";" in volume:
+                            volume, cname = volume.split(";")
 
-                parts = volume.rsplit(":")
-                suffix = parts[-1] if parts[-1] in {"ro", "rw"} else None
+                        parts = volume.rsplit(":")
+                        suffix = (
+                            parts[-1] if parts[-1] in {"ro", "rw"} else None
+                        )
 
-                if suffix:
-                    parts = parts[:-1]
+                        if suffix:
+                            parts = parts[:-1]
 
-                if len(parts) == 1:
-                    _path = f"{bind_path}/{folder}"
-                    _volume = cname or parts[0].rsplit("/")[-1]
+                        if len(parts) == 1:
+                            _path = f"{bind_path}/{folder}"
+                            _volume = cname or parts[0].rsplit("/")[-1]
 
-                    if _volume in used_volumes:
-                        _volume = f"{_volume}{used_volumes.count(_volume) + 1}"
+                            if _volume in used_volumes:
+                                _volume = (
+                                    f"{_volume}"
+                                    f"{used_volumes.count(_volume) + 1}"
+                                )
 
-                    if not (use_full_directory and len(custom_binds) == 1):
-                        _path += f"/{_volume}"
+                            if not (
+                                use_full_directory and len(custom_binds) == 1
+                            ):
+                                _path += f"/{_volume}"
 
-                    parts = [_path, parts[0]]
+                            parts = [_path, parts[0]]
 
-                if suffix:
-                    parts.append(suffix)
+                        if suffix:
+                            parts.append(suffix)
 
-                used_volumes.append(parts[0].rsplit("/")[-1])
-                _volumes.append(":".join(parts))
-
-            service["services"][name]["volumes"] = _volumes
-
-        if environment := data.get("environment"):
-            service["services"][name]["environment"] = environment
-
-        if labels := data.get("labels"):
-            service["services"][name]["labels"] = labels
-
-        if healthcheck := data.get("healthcheck"):
-            service["services"][name]["healthcheck"] = healthcheck
-
-        if ports := data.get("ports"):
-            service["services"][name]["ports"] = ports
+                        used_volumes.append(parts[0].rsplit("/")[-1])
+                        _value.append(":".join(parts))
+                service["services"][name][option] = _value or value
 
         service["services"][name]["networks"] = [network]
 
