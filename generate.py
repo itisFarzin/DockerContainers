@@ -97,14 +97,16 @@ if os.path.exists(composes_folder):
     shutil.rmtree(composes_folder)
 
 os.mkdir(composes_folder)
-
 main_template["services"] = {}
-for path in sorted(
-    list(Path(containers_folder).glob("*.yaml"))
-    + list(Path(containers_folder).glob("*.yml"))
-):
-    with open(path, "r") as f:
-        data: dict[str, str | list] = yaml.safe_load(f)
+
+
+def main():
+    for path in sorted(
+        list(Path(containers_folder).glob("*.yaml"))
+        + list(Path(containers_folder).glob("*.yml"))
+    ):
+        container = open(path, "r")
+        data: dict[str, str | list] = yaml.safe_load(container)
         name = data.get("name", path.stem)
         folder = data.get("folder", name)
         service: dict[str, dict] = yaml.safe_load(
@@ -163,7 +165,7 @@ for path in sorted(
                     _volume = cname or parts[0].rsplit("/")[-1]
 
                     if _volume in used_volumes:
-                        _volume = f"{_volume}{used_volumes.count(_volume)+1}"
+                        _volume = f"{_volume}{used_volumes.count(_volume) + 1}"
 
                     if not (use_full_directory and len(custom_binds) == 1):
                         _path += f"/{_volume}"
@@ -192,8 +194,8 @@ for path in sorted(
 
         service["services"][name]["networks"] = [network]
 
-        with open(f"{composes_folder}/{name}.yaml", "w") as file:
-            yaml.dump(service, file, sort_keys=False)
+        with open(f"{composes_folder}/{name}.yaml", "w") as compose:
+            yaml.dump(service, compose, sort_keys=False)
 
         main_template["services"][name] = yaml.safe_load(
             composes_template.format(
@@ -201,5 +203,11 @@ for path in sorted(
             )
         )
 
-with open(output, "w") as f:
-    yaml.dump(main_template, f, sort_keys=False)
+        container.close()
+
+    with open(output, "w") as file:
+        yaml.dump(main_template, file, sort_keys=False)
+
+
+if __name__ == "__main__":
+    main()
