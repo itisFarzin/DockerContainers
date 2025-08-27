@@ -1,11 +1,9 @@
 name: update compose files
-run-name: update compose files
 
 on:
   push:
     branches:
       - main
-
 
 permissions:
   contents: write
