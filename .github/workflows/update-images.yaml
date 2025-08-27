@@ -1,0 +1,42 @@
+name: update images
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 */8 * * *'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.13'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install GitPython PyYAML requests packaging
+
+      - name: Set Git Credentials
+        run: |
+          git config --local user.name "gitea-actions"
+          git config --local user.email "gitea-actions@localhost"
+
+      - name: Run Python script
+        run: python update.py
+        env:
+          CONTAINERS_FOLDER: ${{ vars.CONTAINERS_FOLDER }}
+          PAGE_SIZE: ${{ vars.PAGE_SIZE }}
+
+      - name: Push changes
+        run: |
+          git push
