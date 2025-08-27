@@ -1,106 +1,47 @@
 #!/usr/bin/env python3
 
 import os
+import shutil
+from pathlib import Path
+
 try:
     import yaml
 except ImportError:
-    print("ERROR: install the pyyaml package.")
+    print("ERROR: install the 'pyyaml' package.")
     exit(1)
-
-import shutil
-import argparse
-from pathlib import Path
-
-parser = argparse.ArgumentParser(description="Docker compose generator.")
-parser.add_argument(
-    "--containers-folder",
-    type=str,
-    help="The containers folder",
-    default=os.getenv("CONTAINERS_FOLDER") or "containers"
-)
-parser.add_argument(
-    "--composes-folder",
-    type=str,
-    help="The composes folder",
-    default=os.getenv("COMPOSES_FOLDER") or "composes"
-)
-parser.add_argument(
-    "--network-driver",
-    type=str,
-    help="The network's driver",
-    default=os.getenv("NETWORK_DRIVER") or "bridge"
-)
-parser.add_argument(
-    "--network-name",
-    type=str,
-    help="The network name for the composes",
-    default=os.getenv("NETWORK_NAME") or "test_network"
-)
-parser.add_argument(
-    "--subnet",
-    type=str,
-    help="The subnet for the composes' network",
-    default=os.getenv("SUBNET") or "172.20.0.0/24"
-)
-parser.add_argument(
-    "--restart-policy",
-    type=str,
-    help="The restart policy for containers",
-    default=os.getenv("RESTART_POLICY") or "unless-stopped"
-)
-parser.add_argument(
-    "--use-full-directory",
-    help="Use full directory binding if no other volumes exist",
-    default=(
-        (os.getenv("USE_FULL_DIRECTORY") or "true").lower() in {"true", "1"}
-    ) or True,
-    action=argparse.BooleanOptionalAction
-)
-parser.add_argument(
-    "--bind-path",
-    type=str,
-    help="The base path for binding the containers' bind volumes",
-    default=os.getenv("BIND_PATH") or "/home/docker/Docker"
-)
-parser.add_argument(
-    "-o",
-    "--output",
-    type=str,
-    help="The docker compose output file",
-    default=os.getenv("OUTPUT") or "docker-compose.yaml"
-)
-args = parser.parse_args()
-
-containers_folder: str = args.containers_folder
-composes_folder: str = args.composes_folder
-network: str = args.network_name
-network_driver: str = args.network_driver
-subnet: str = args.subnet
-gateway: str = subnet.rsplit(".", 1)[0] + ".1"
-restart_policy: str = args.restart_policy
-use_full_directory: bool = args.use_full_directory
-bind_path: str = args.bind_path
-output: str = args.output
-
-main_template = yaml.safe_load(
-    open("templates/main-compose.yaml").read().lstrip().format(
-        network=network,
-        driver=network_driver,
-        subnet=subnet,
-        gateway=gateway,
-    )
-)
-composes_template = open("templates/composes.yaml").read().lstrip()
-service_template = open("templates/services.yaml").read().lstrip()
-
-if os.path.exists(composes_folder):
-    shutil.rmtree(composes_folder)
-
-os.mkdir(composes_folder)
-main_template["services"] = {}
 
 
 def main():
+    containers_folder: str = os.getenv("CONTAINERS_FOLDER") or "containers"
+    composes_folder: str = os.getenv("COMPOSES_FOLDER") or "composes"
+    network: str = os.getenv("NETWORK_NAME") or "cloud"
+    network_driver: str = os.getenv("NETWORK_DRIVER") or "bridge"
+    subnet: str = os.getenv("SUBNET") or "172.20.0.0/24"
+    gateway: str = subnet.rsplit(".", 1)[0] + ".1"
+    restart_policy: str = os.getenv("RESTART_POLICY") or "unless-stopped"
+    use_full_directory: bool = (
+        (os.getenv("USE_FULL_DIRECTORY") or "true").lower() in {"true", "1"}
+    )
+    bind_path: str = os.getenv("BIND_PATH") or "/home/docker/Docker"
+    output: str = os.getenv("OUTPUT") or "docker-compose.yaml"
+
+    main_template = yaml.safe_load(
+        open("templates/main-compose.yaml").read().lstrip().format(
+            network=network,
+            driver=network_driver,
+            subnet=subnet,
+            gateway=gateway,
+        )
+    )
+    main_template["services"] = {}
+    composes_template = open("templates/composes.yaml").read().lstrip()
+    service_template = open("templates/services.yaml").read().lstrip()
+
+    if os.path.exists(composes_folder):
+        shutil.rmtree(composes_folder)
+
+    os.mkdir(composes_folder)
+
     options = (
         "command",
         "network_mode",
