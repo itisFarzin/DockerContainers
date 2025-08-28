@@ -1,6 +1,7 @@
 name: update compose files
 
 on:
+  workflow_dispatch:
   push:
     branches:
       - main
