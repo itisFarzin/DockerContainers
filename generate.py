@@ -12,18 +12,57 @@ except ImportError:
 
 
 def main():
-    containers_folder: str = os.getenv("CONTAINERS_FOLDER") or "containers"
-    composes_folder: str = os.getenv("COMPOSES_FOLDER") or "composes"
-    network: str = os.getenv("NETWORK_NAME") or "cloud"
-    network_driver: str = os.getenv("NETWORK_DRIVER") or "bridge"
-    subnet: str = os.getenv("SUBNET") or "172.20.0.0/24"
-    gateway: str = subnet.rsplit(".", 1)[0] + ".1"
-    restart_policy: str = os.getenv("RESTART_POLICY") or "unless-stopped"
-    use_full_directory: bool = (
-        (os.getenv("USE_FULL_DIRECTORY") or "true").lower() in {"true", "1"}
+    with open("config/generate.yaml", "r") as file:
+        config: dict[str, str | int | list] = yaml.safe_load(file)
+
+    containers_folder: str = (
+        os.getenv("CONTAINERS_FOLDER")
+        or config.get("containers_folder")
+        or "containers"
     )
-    bind_path: str = os.getenv("BIND_PATH") or "/home/docker/Docker"
-    output: str = os.getenv("OUTPUT") or "docker-compose.yaml"
+    composes_folder: str = (
+        os.getenv("COMPOSES_FOLDER")
+        or config.get("composes_folder")
+        or "composes"
+    )
+    network: str = (
+        os.getenv("NETWORK_NAME")
+        or config.get("network_name")
+        or "cloud"
+    )
+    network_driver: str = (
+        os.getenv("NETWORK_DRIVER")
+        or config.get("network_driver")
+        or "bridge"
+    )
+    subnet: str = (
+        os.getenv("SUBNET")
+        or config.get("subnet")
+        or "172.20.0.0/24"
+    )
+    gateway: str = subnet.rsplit(".", 1)[0] + ".1"
+    restart_policy: str = (
+        os.getenv("RESTART_POLICY")
+        or config.get("restart_policy")
+        or "unless-stopped"
+    )
+    use_full_directory: bool = (
+        str(
+            os.getenv("USE_FULL_DIRECTORY")
+            or config.get("use_full_directory")
+            or "true"
+        ).lower() in {"true", "1"}
+    )
+    bind_path: str = (
+        os.getenv("BIND_PATH")
+        or config.get("bind_path")
+        or "/home/docker/Docker"
+    )
+    output: str = (
+        os.getenv("OUTPUT")
+        or config.get("output")
+        or "docker-compose.yaml"
+    )
 
     main_template = yaml.safe_load(
         open("templates/main-compose.yaml").read().lstrip().format(
