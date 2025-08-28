@@ -10,59 +10,49 @@ except ImportError:
     print("ERROR: install the 'pyyaml' package.")
     exit(1)
 
+default_values = {
+    "containers_folder": "containers",
+    "composes_folder": "composes",
+    "network_name": "cloud",
+    "network_driver": "bridge",
+    "subnet": "172.20.0.0/24",
+    "restart_policy": "unless-stopped",
+    "use_full_directory": True,
+    "bind_path": "/home/docker/Docker",
+    "output": "docker-compose.yaml",
+}
+
+
+def get_config(
+    key: str,
+    config: dict[str, str | int] | None = None
+):
+    if not config:
+        config = {}
+
+    return (
+        os.getenv(key.upper())
+        or config.get(key.lower())
+        or default_values.get(key)
+    )
+
 
 def main():
     with open("config/generate.yaml", "r") as file:
         config: dict[str, str | int | list] = yaml.safe_load(file)
 
-    containers_folder: str = (
-        os.getenv("CONTAINERS_FOLDER")
-        or config.get("containers_folder")
-        or "containers"
-    )
-    composes_folder: str = (
-        os.getenv("COMPOSES_FOLDER")
-        or config.get("composes_folder")
-        or "composes"
-    )
-    network: str = (
-        os.getenv("NETWORK_NAME")
-        or config.get("network_name")
-        or "cloud"
-    )
-    network_driver: str = (
-        os.getenv("NETWORK_DRIVER")
-        or config.get("network_driver")
-        or "bridge"
-    )
-    subnet: str = (
-        os.getenv("SUBNET")
-        or config.get("subnet")
-        or "172.20.0.0/24"
-    )
+    containers_folder: str = get_config("containers_folder", config)
+    composes_folder: str = get_config("composes_folder", config)
+    network: str = get_config("network_name", config)
+    network_driver: str = get_config("network_driver", config)
+    subnet: str = get_config("subnet", config)
     gateway: str = subnet.rsplit(".", 1)[0] + ".1"
-    restart_policy: str = (
-        os.getenv("RESTART_POLICY")
-        or config.get("restart_policy")
-        or "unless-stopped"
-    )
+    restart_policy: str = get_config("restart_policy", config)
     use_full_directory: bool = (
-        str(
-            os.getenv("USE_FULL_DIRECTORY")
-            or config.get("use_full_directory")
-            or "true"
-        ).lower() in {"true", "1"}
+        str(get_config("use_full_directory", config)).lower() in {"true", "1"}
     )
-    bind_path: str = (
-        os.getenv("BIND_PATH")
-        or config.get("bind_path")
-        or "/home/docker/Docker"
-    )
-    output: str = (
-        os.getenv("OUTPUT")
-        or config.get("output")
-        or "docker-compose.yaml"
-    )
+    bind_path: str = get_config("bind_path", config)
+    output: str = get_config("output", config)
 
     main_template = yaml.safe_load(
         open("templates/main-compose.yaml").read().lstrip().format(
@@ -102,14 +92,15 @@ def main():
         list(Path(containers_folder).glob("*.yaml"))
         + list(Path(containers_folder).glob("*.yml"))
     ):
-        container = open(path, "r")
-        data: dict[str, str | list] = yaml.safe_load(container)
-        name = data.get("name", path.stem)
-        folder = data.get("folder", name)
+        with open(path, "r") as file:
+            container: dict[str, str | list] = yaml.safe_load(file)
+
+        name = container.get("name", path.stem)
+        folder = container.get("folder", name)
         service: dict[str, dict] = yaml.safe_load(
             service_template.format(
                 name=name,
-                image=data["image"],
+                image=container["image"],
                 restart=restart_policy,
                 network=network,
             )
@@ -118,7 +109,7 @@ def main():
         used_volumes = []
 
         for option in options:
-            if value := data.get(option):
+            if value := container.get(option):
                 _value = []
                 if option == "devices":
                     for device in value:
@@ -176,7 +167,7 @@ def main():
                         _value.append(":".join(parts))
                 service["services"][name][option] = _value or value
 
-        if "network_mode" not in data:
+        if "network_mode" not in container:
             service["services"][name]["networks"] = [network]
 
         with open(f"{composes_folder}/{name}.yaml", "w") as compose:
@@ -187,8 +178,6 @@ def main():
                 name=name, path=composes_folder + "/" + path.name
             )
         )
-
-        container.close()
 
     with open(output, "w") as file:
         yaml.dump(main_template, file, sort_keys=False)

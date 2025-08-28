@@ -20,6 +20,11 @@ import requests  # noqa: E402
 from git import Repo  # noqa: E402
 from packaging.version import Version, InvalidVersion  # noqa: E402
 
+default_values = {
+    "containers_folder": "containers",
+    "page_size": 40,
+}
+
 
 def parse_version(version: str):
     try:
@@ -30,6 +35,20 @@ def parse_version(version: str):
         pass
 
 
+def get_config(
+    key: str,
+    config: dict[str, str | int] | None = None
+):
+    if not config:
+        config = {}
+
+    return (
+        os.getenv(key.upper())
+        or config.get(key.lower())
+        or default_values.get(key)
+    )
+
+
 def main():
     repo = Repo(".")
     # Discard any changes
@@ -38,16 +57,8 @@ def main():
     with open("config/update.yaml", "r") as file:
         config: dict[str, str | int | list] = yaml.safe_load(file)
 
-    containers_folder: str = (
-        os.getenv("CONTAINERS_FOLDER")
-        or config.get("containers_folder")
-        or "containers"
-    )
-    page_size = int(
-        os.getenv("PAGE_SIZE")
-        or config.get("page_size")
-        or 30
-    )
+    containers_folder: str = get_config("containers_folder", config)
+    page_size = int(get_config("page_size", config))
 
     for path in sorted(
         list(Path(containers_folder).glob("*.yaml"))
