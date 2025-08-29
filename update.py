@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 import os
+import sys
+import logging
 import importlib.util
 from pathlib import Path
 
@@ -19,6 +21,12 @@ import yaml  # noqa: E402
 import requests  # noqa: E402
 from git import Repo  # noqa: E402
 from packaging.version import Version, InvalidVersion  # noqa: E402
+
+
+logging.basicConfig(
+    stream=sys.stdout, format="%(levelname)s: %(message)s", level=logging.INFO
+)
+
 
 default_values = {
     "containers_folder": "containers",
@@ -72,10 +80,12 @@ def main():
         registry = "docker.io"
 
         if len(parts := image.split(":")) != 2:
+            logging.info(f"Image {image} is invalid.")
             # If an image doesn't specify a version, Docker will append the
             # latest tag by default.
             # This also skip the invalid image formats (e.g. double column)
             continue
+
         image, version = parts
 
         if len(parts2 := image.split("/")) == 3:
@@ -83,6 +93,7 @@ def main():
         elif len(parts2) == 2:
             user, image = parts2
         else:
+            logging.info(f"Image {image} is invalid.")
             # Skip the invalid image formats
             continue
 
@@ -98,11 +109,15 @@ def main():
         )
 
         if data.get("update") is False:
+            logging.info(
+                f"Update for image {registry}/{user}/{image} is disabled."
+            )
             continue
 
         try:
             version = Version(version)
-        except InvalidVersion:
+        except InvalidVersion as e:
+            logging.debug(e)
             # TODO: Support different types of versions.
             # Skip them for now.
             continue
@@ -133,6 +148,10 @@ def main():
                 repo.git.commit(
                     "-m",
                     f"refactor({image}): update to {newest_version}",
+                )
+
+                logging.info(
+                    f"Updated {registry}/{user}/{image} to {newest_version}."
                 )
 
         # TODO: Support other registries.
