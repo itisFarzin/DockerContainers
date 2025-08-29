@@ -43,10 +43,7 @@ def parse_version(version: str):
         pass
 
 
-def get_config(
-    key: str,
-    config: dict[str, str | int] | None = None
-):
+def get_config(key: str, config: dict[str, str | int] | None = None):
     if not config:
         config = {}
 
@@ -101,11 +98,13 @@ def main():
             (
                 config.get(item)
                 for item in [
-                    f"{registry}/{user}/{image}", f"{user}/{image}", image
+                    f"{registry}/{user}/{image}",
+                    f"{user}/{image}",
+                    image,
                 ]
                 if item in config
             ),
-            {}
+            {},
         )
 
         if data.get("update") is False:
@@ -127,15 +126,16 @@ def main():
                 f"https://hub.docker.com/v2/namespaces/{user}/repositories/"
                 f"{image}/tags?platforms=true&page_size={page_size}"
             ).json()
-            versions = (
-                [version["name"] for version in result.get("results", {})]
-            )
+            versions = [
+                version["name"] for version in result.get("results", {})
+            ]
             if newest_version := max(
                 (
-                    v for v in versions
+                    v
+                    for v in versions
                     if (_v := parse_version(v)) and _v > version
                 ),
-                default=None
+                default=None,
             ):
                 container["image"] = (
                     f"{registry}/{user}/{image}:{newest_version}"

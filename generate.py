@@ -23,10 +23,7 @@ default_values = {
 }
 
 
-def get_config(
-    key: str,
-    config: dict[str, str | int] | None = None
-):
+def get_config(key: str, config: dict[str, str | int] | None = None):
     if not config:
         config = {}
 
@@ -48,14 +45,17 @@ def main():
     subnet: str = get_config("subnet", config)
     gateway: str = subnet.rsplit(".", 1)[0] + ".1"
     restart_policy: str = get_config("restart_policy", config)
-    use_full_directory: bool = (
-        str(get_config("use_full_directory", config)).lower() in {"true", "1"}
-    )
+    use_full_directory: bool = str(
+        get_config("use_full_directory", config)
+    ).lower() in {"true", "1"}
     bind_path: str = get_config("bind_path", config)
     output: str = get_config("output", config)
 
     main_template = yaml.safe_load(
-        open("templates/main-compose.yaml").read().lstrip().format(
+        open("templates/main-compose.yaml")
+        .read()
+        .lstrip()
+        .format(
             network=network,
             driver=network_driver,
             subnet=subnet,
@@ -83,7 +83,7 @@ def main():
         "devices",
         "volumes",
         "environment",
-        "depends_on"
+        "depends_on",
         "healthcheck",
         "ports",
     )
@@ -119,16 +119,21 @@ def main():
 
                         _value.append(":".join(parts))
                 elif option == "volumes":
-                    custom_binds = list(filter(
-                        lambda volume: (
-                            (split_volume := volume.split(":")) and
-                            (len(split_volume) == 1 or (
-                                len(split_volume) == 2
-                                and split_volume[-1] in {"ro", "rw"}
-                            ))
-                        ),
-                        value
-                    ))
+                    custom_binds = list(
+                        filter(
+                            lambda volume: (
+                                (split_volume := volume.split(":"))
+                                and (
+                                    len(split_volume) == 1
+                                    or (
+                                        len(split_volume) == 2
+                                        and split_volume[-1] in {"ro", "rw"}
+                                    )
+                                )
+                            ),
+                            value,
+                        )
+                    )
 
                     for volume in value:
                         cname = ""
