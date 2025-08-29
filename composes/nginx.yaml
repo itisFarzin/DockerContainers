@@ -16,8 +16,8 @@ services:
     - 80:80/tcp
     - 443:443/tcp
     networks:
-    - test_network
+    - cloud
 networks:
-  test_network:
-    name: test_network
+  cloud:
+    name: cloud
     external: true

@@ -12,8 +12,8 @@ services:
     - PUID=32011
     - PGID=32011
     networks:
-    - test_network
+    - cloud
 networks:
-  test_network:
-    name: test_network
+  cloud:
+    name: cloud
     external: true

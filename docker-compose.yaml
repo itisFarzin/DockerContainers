@@ -8,9 +8,9 @@ services:
       file: composes/nginx.yaml
       service: nginx
 networks:
-  test_network:
+  cloud:
     driver: bridge
-    name: test_network
+    name: cloud
     ipam:
       config:
       - subnet: 172.20.0.0/24
