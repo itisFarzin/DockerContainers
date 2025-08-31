@@ -28,10 +28,23 @@ logging.basicConfig(
 )
 
 
-default_values = {
-    "containers_folder": "containers",
-    "page_size": 40,
-}
+class Config:
+    _config: dict[str, str | int | list]
+    default_values = {
+        "containers_folder": "containers",
+        "page_size": 40,
+    }
+
+    def __init__(self):
+        with open("config/update.yaml", "r") as file:
+            self._config = yaml.safe_load(file)
+
+    def get(self, key: str):
+        return (
+            os.getenv(key.upper())
+            or self._config.get(key.lower())
+            or self.default_values.get(key)
+        )
 
 
 def parse_version(version: str):
@@ -43,27 +56,14 @@ def parse_version(version: str):
         pass
 
 
-def get_config(key: str, config: dict[str, str | int] | None = None):
-    if not config:
-        config = {}
-
-    return (
-        os.getenv(key.upper())
-        or config.get(key.lower())
-        or default_values.get(key)
-    )
-
-
 def main():
+    config = Config()
     repo = Repo(".")
     # Discard any changes
     repo.git.reset("--hard")
 
-    with open("config/update.yaml", "r") as file:
-        config: dict[str, str | int | list] = yaml.safe_load(file)
-
-    containers_folder: str = get_config("containers_folder", config)
-    page_size = int(get_config("page_size", config))
+    containers_folder: str = config.get("containers_folder")
+    page_size = int(config.get("page_size"))
 
     for path in sorted(
         list(Path(containers_folder).glob("*.yaml"))
@@ -102,7 +102,7 @@ def main():
                     f"{user}/{image}",
                     image,
                 ]
-                if item in config
+                if item in config._config
             ),
             {},
         )

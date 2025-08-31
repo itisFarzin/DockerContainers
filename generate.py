@@ -10,46 +10,48 @@ except ImportError:
     print("ERROR: install the 'pyyaml' package.")
     exit(1)
 
-default_values = {
-    "containers_folder": "containers",
-    "composes_folder": "composes",
-    "network_name": "cloud",
-    "network_driver": "bridge",
-    "subnet": "172.20.0.0/24",
-    "restart_policy": "unless-stopped",
-    "use_full_directory": True,
-    "bind_path": "/home/docker/Docker",
-    "output": "docker-compose.yaml",
-}
 
+class Config:
+    config: dict[str, str | int | list]
+    default_values = {
+        "containers_folder": "containers",
+        "composes_folder": "composes",
+        "network_name": "cloud",
+        "network_driver": "bridge",
+        "subnet": "172.20.0.0/24",
+        "restart_policy": "unless-stopped",
+        "use_full_directory": True,
+        "bind_path": "/home/docker/Docker",
+        "output": "docker-compose.yaml",
+    }
 
-def get_config(key: str, config: dict[str, str | int] | None = None):
-    if not config:
-        config = {}
+    def __init__(self):
+        with open("config/generate.yaml", "r") as file:
+            self.config = yaml.safe_load(file)
 
-    return (
-        os.getenv(key.upper())
-        or config.get(key.lower())
-        or default_values.get(key)
-    )
+    def get(self, key: str):
+        return (
+            os.getenv(key.upper())
+            or self.config.get(key.lower())
+            or self.default_values.get(key)
+        )
 
 
 def main():
-    with open("config/generate.yaml", "r") as file:
-        config: dict[str, str | int | list] = yaml.safe_load(file)
+    config = Config()
 
-    containers_folder: str = get_config("containers_folder", config)
-    composes_folder: str = get_config("composes_folder", config)
-    network: str = get_config("network_name", config)
-    network_driver: str = get_config("network_driver", config)
-    subnet: str = get_config("subnet", config)
+    containers_folder: str = config.get("containers_folder")
+    composes_folder: str = config.get("composes_folder")
+    network: str = config.get("network_name")
+    network_driver: str = config.get("network_driver")
+    subnet: str = config.get("subnet")
     gateway: str = subnet.rsplit(".", 1)[0] + ".1"
-    restart_policy: str = get_config("restart_policy", config)
+    restart_policy: str = config.get("restart_policy")
     use_full_directory: bool = str(
-        get_config("use_full_directory", config)
+        config.get("use_full_directory")
     ).lower() in {"true", "1"}
-    bind_path: str = get_config("bind_path", config)
-    output: str = get_config("output", config)
+    bind_path: str = config.get("bind_path")
+    output: str = config.get("output")
 
     main_template = yaml.safe_load(
         open("templates/main-compose.yaml")
