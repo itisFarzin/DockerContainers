@@ -88,17 +88,29 @@ def main():
         if len(parts2 := image.split("/")) == 3:
             registry, user, image = parts2
         elif len(parts2) == 2:
-            user, image = parts2
+            _var, image = parts2
+            if "." in _var:
+                registry = _var
+                user = "_"
+            else:
+                user = _var
+        elif len(parts2) == 1:
+            image = parts2[0]
+            user = "_"
         else:
             logging.info(f"Image {image} is invalid.")
             # Skip the invalid image formats
             continue
 
+        full_image = "/".join(
+            [registry, image] if user == "_" else [registry, user, image]
+        )
+
         data = next(
             (
                 config.get(item)
                 for item in [
-                    f"{registry}/{user}/{image}",
+                    full_image,
                     f"{user}/{image}",
                     image,
                 ]
@@ -108,9 +120,7 @@ def main():
         )
 
         if data.get("update") is False:
-            logging.info(
-                f"Update for image {registry}/{user}/{image} is disabled."
-            )
+            logging.info(f"Update for image {full_image} is disabled.")
             continue
 
         try:
@@ -122,8 +132,9 @@ def main():
             continue
 
         if registry == "docker.io":
+            _user = "library" if user == "_" else user
             result: dict[str, str | dict] = requests.get(
-                f"https://hub.docker.com/v2/namespaces/{user}/repositories/"
+                f"https://hub.docker.com/v2/namespaces/{_user}/repositories/"
                 f"{image}/tags?platforms=true&page_size={page_size}"
             ).json()
             versions = [
@@ -137,9 +148,7 @@ def main():
                 ),
                 default=None,
             ):
-                container["image"] = (
-                    f"{registry}/{user}/{image}:{newest_version}"
-                )
+                container["image"] = f"{full_image}:{newest_version}"
 
                 with open(path, "w") as file:
                     yaml.dump(container, file, sort_keys=False)
@@ -151,9 +160,7 @@ def main():
                     f" update {image} to {newest_version}",
                 )
 
-                logging.info(
-                    f"Updated {registry}/{user}/{image} to {newest_version}."
-                )
+                logging.info(f"Updated {full_image} to {newest_version}.")
 
         # TODO: Support other registries.
 
