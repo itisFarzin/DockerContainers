@@ -147,7 +147,8 @@ def main():
                 repo.index.add([path])
                 repo.git.commit(
                     "-m",
-                    f"refactor({image}): update to {newest_version}",
+                    f"refactor({path.stem}):"
+                    f" update {image} to {newest_version}",
                 )
 
                 logging.info(
