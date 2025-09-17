@@ -74,6 +74,7 @@ def main():
     os.mkdir(composes_folder)
 
     options = (
+        "network",
         "command",
         "network_mode",
         "user",
@@ -90,25 +91,16 @@ def main():
         "ports",
     )
 
-    for path in sorted(
-        list(Path(containers_folder).glob("*.yaml"))
-        + list(Path(containers_folder).glob("*.yml"))
-    ):
-        with open(path, "r") as file:
-            container: dict[str, str | list] = yaml.safe_load(file)
-
+    def generate(container: dict[str, str | list]):
         name = container.get("name", path.stem)
         folder = container.get("folder", name)
-        service: dict[str, dict] = yaml.safe_load(
-            service_template.format(
-                name=name,
-                image=container["image"],
-                restart=restart_policy,
-                network=network,
-            )
-        )
-
         used_volumes = []
+        result = {
+            "image": container["image"],
+            "hostname": name,
+            "container_name": name,
+            "restart": container.get("restart", restart_policy),
+        }
 
         for option in options:
             if value := container.get(option):
@@ -172,19 +164,47 @@ def main():
 
                         used_volumes.append(parts[0].rsplit("/")[-1])
                         _value.append(":".join(parts))
-                service["services"][name][option] = _value or value
+                result[option] = _value or value
 
         if "network_mode" not in container:
-            service["services"][name]["networks"] = [network]
+            result["networks"] = [network]
 
-        with open(f"{composes_folder}/{name}.yaml", "w") as compose:
-            yaml.dump(service, compose, sort_keys=False)
+        return result
 
-        main_template["services"][name] = yaml.safe_load(
-            composes_template.format(
-                name=name, path=composes_folder + "/" + path.name
-            )
+    for path in sorted(
+        list(Path(containers_folder).glob("*.yaml"))
+        + list(Path(containers_folder).glob("*.yml"))
+    ):
+        used_names = []
+
+        service: dict[str, dict] = yaml.safe_load(
+            service_template.format(network=network)
         )
+        service["services"] = {}
+
+        with open(path, "r") as file:
+            containers: list[dict[str, str | list]] = list(
+                yaml.safe_load_all(file)
+            )
+
+        for container in containers:
+            name = container.get("name", path.stem)
+            if name in used_names:
+                number = str(used_names.count(name) + 1)
+                container["name"] = name = f"{name}_{number}"
+                if container["folder"]:
+                    container["folder"] += number
+
+            used_names.append(name)
+            service["services"][name] = generate(container)
+            main_template["services"][name] = yaml.safe_load(
+                composes_template.format(
+                    name=name, path=composes_folder + "/" + path.name
+                )
+            )
+
+        with open(f"{composes_folder}/{path.stem}.yaml", "w") as compose:
+            yaml.dump(service, compose, sort_keys=False)
 
     with open(output, "w") as file:
         yaml.dump(main_template, file, sort_keys=False)
