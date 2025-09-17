@@ -65,15 +65,8 @@ def main():
     containers_folder: str = config.get("containers_folder")
     page_size = int(config.get("page_size"))
 
-    for path in sorted(
-        list(Path(containers_folder).glob("*.yaml"))
-        + list(Path(containers_folder).glob("*.yml"))
-    ):
-        with open(path, "r") as file:
-            container: dict[str, str | list] = yaml.safe_load(file)
-
+    def update(container: dict[str, str | list], page_size: int):
         image = container["image"]
-        version = "latest"
         registry = "docker.io"
 
         if len(parts := image.split(":")) != 2:
@@ -81,7 +74,7 @@ def main():
             # If an image doesn't specify a version, Docker will append the
             # latest tag by default.
             # This also skip the invalid image formats (e.g. double column)
-            continue
+            return
 
         image, version = parts
 
@@ -100,7 +93,7 @@ def main():
         else:
             logging.info(f"Image {image} is invalid.")
             # Skip the invalid image formats
-            continue
+            return
 
         full_image = "/".join(
             [registry, image] if user == "_" else [registry, user, image]
@@ -121,7 +114,7 @@ def main():
 
         if data.get("update") is False:
             logging.info(f"Update for image {full_image} is disabled.")
-            continue
+            return
 
         try:
             version = Version(version)
@@ -129,40 +122,58 @@ def main():
             logging.debug(e)
             # TODO: Support different types of versions.
             # Skip them for now.
-            continue
+            return
 
         if registry == "docker.io":
             _user = "library" if user == "_" else user
             result: dict[str, str | dict] = requests.get(
                 f"https://hub.docker.com/v2/namespaces/{_user}/repositories/"
-                f"{image}/tags?platforms=true&page_size={page_size}"
+                f"{image}/tags?page_size={page_size}"
             ).json()
             versions = [
                 version["name"] for version in result.get("results", {})
             ]
-            if newest_version := max(
+            newest_version = max(
                 (
                     v
                     for v in versions
                     if (_v := parse_version(v)) and _v > version
                 ),
                 default=None,
-            ):
-                container["image"] = f"{full_image}:{newest_version}"
+            )
+            if not newest_version:
+                return
 
-                with open(path, "w") as file:
-                    yaml.dump(container, file, sort_keys=False)
-
-                repo.index.add([path])
-                repo.git.commit(
-                    "-m",
-                    f"refactor({path.stem}):"
-                    f" update {image} to {newest_version}",
-                )
-
-                logging.info(f"Updated {full_image} to {newest_version}.")
+            container["image"] = f"{full_image}:{newest_version}"
+            return full_image, image, newest_version
 
         # TODO: Support other registries.
+
+    for path in sorted(
+        list(Path(containers_folder).glob("*.yaml"))
+        + list(Path(containers_folder).glob("*.yml"))
+    ):
+        with open(path, "r") as file:
+            containers: list[dict[str, str | list]] = list(
+                yaml.safe_load_all(file)
+            )
+
+        for container in containers:
+            if not (result := update(container, page_size)):
+                continue
+
+            full_image, image, newest_version = result
+            with open(path, "w") as file:
+                yaml.dump_all(containers, file, sort_keys=False)
+
+            repo.index.add([path])
+            repo.git.commit(
+                "-m",
+                f"refactor({path.stem}):"
+                f" update {image} to {newest_version}",
+            )
+
+            logging.info(f"Updated {full_image} to {newest_version}.")
 
 
 if __name__ == "__main__":
