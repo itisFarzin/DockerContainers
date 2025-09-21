@@ -1,6 +1,6 @@
 # DockerContainers
 
-A simple Python script to generate Docker compose files.
+Simple Python scripts to generate Docker compose files and update images (via GitHub workflows).
 
 ## License
 
