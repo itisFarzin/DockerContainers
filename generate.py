@@ -21,6 +21,7 @@ class Config:
         "subnet": "172.20.0.0/24",
         "restart_policy": "unless-stopped",
         "use_full_directory": True,
+        "capitalize_folder_name": False,
         "bind_path": "/home/docker/Docker",
         "output": "docker-compose.yaml",
     }
@@ -91,9 +92,15 @@ def main():
         "ports",
     )
 
+    def capitalize_name(name: str) -> str:
+        return name[0].upper() + name[1:]
+
     def generate(container: dict[str, str | list]):
         name = container.get("name", path.stem)
         folder = container.get("folder", name)
+        if config.get("capitalize_folder_name"):
+            folder = capitalize_name(folder)
+
         used_volumes = []
         result = {
             "image": container["image"],
