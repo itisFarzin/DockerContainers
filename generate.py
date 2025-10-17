@@ -76,6 +76,7 @@ def main():
 
     options = (
         "network",
+        "working_dir",
         "command",
         "network_mode",
         "user",
