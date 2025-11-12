@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import os
+import re
 import sys
 import logging
 import importlib.util
@@ -47,13 +48,27 @@ class Config:
         )
 
 
-def parse_version(version: str):
+def extract_version(version: str, pattern: str | None) -> str | None:
+    if not pattern:
+        return version
+
+    match = re.search(pattern, version)
+    if match and match.groups():
+        return match.group(1)
+
+    return None
+
+
+def parse_version(version: str | None):
+    if not version:
+        return None
+
     try:
         parsed_version = Version(version)
         if not parsed_version.is_prerelease:
             return parsed_version
     except InvalidVersion:
-        pass
+        return None
 
 
 def main():
@@ -116,12 +131,17 @@ def main():
             logging.info(f"Update for image {full_image} is disabled.")
             return
 
-        try:
-            version = Version(version)
-        except InvalidVersion as e:
-            logging.debug(e)
-            # TODO: Support different types of versions.
-            # Skip them for now.
+        version_regex = data.get("version_regex")
+
+        if not (
+            current_version := parse_version(
+                extract_version(version, version_regex)
+            )
+        ):
+            logging.warning(
+                "Could not parse a comparable version from '{}' for image {}."
+                " Skipping.".format(version, full_image)
+            )
             return
 
         if registry == "docker.io":
@@ -130,17 +150,23 @@ def main():
                 f"https://hub.docker.com/v2/namespaces/{_user}/repositories/"
                 f"{image}/tags?page_size={page_size}"
             ).json()
+
             versions = [
-                version["name"] for version in result.get("results", {})
+                (v, version["name"])
+                for version in result.get("results", {})
+                if (
+                    v := parse_version(
+                        extract_version(version["name"], version_regex)
+                    )
+                )
+                and v > current_version
             ]
+            if not versions:
+                return
+
             newest_version = max(
-                (
-                    v
-                    for v in versions
-                    if (_v := parse_version(v)) and _v > version
-                ),
-                default=None,
-            )
+                versions, key=lambda p: p[0], default=(None, None)
+            )[1]
             if not newest_version:
                 return
 
