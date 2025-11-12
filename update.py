@@ -144,34 +144,55 @@ def main():
             )
             return
 
+        versions = None
+
         if registry == "docker.io":
-            _user = "library" if user == "_" else user
+            user = "library" if user == "_" else user
             result: dict[str, str | dict] = requests.get(
-                f"https://hub.docker.com/v2/namespaces/{_user}/repositories/"
+                f"https://hub.docker.com/v2/namespaces/{user}/repositories/"
                 f"{image}/tags?page_size={page_size}"
             ).json()
 
             versions = [
-                (v, version["name"])
-                for version in result.get("results", {})
-                if (
-                    v := parse_version(
-                        extract_version(version["name"], version_regex)
-                    )
-                )
-                and v > current_version
+                version["name"] for version in result.get("results", {})
             ]
-            if not versions:
+        elif registry == "ghcr.io":
+            token_request: dict = requests.get(
+                f"https://ghcr.io/token?scope=repository:{user}/{image}:pull"
+            ).json()
+            if not (token := token_request.get("token")):
+                logging.warning(
+                    f'{full_image}: {token_request["errors"][0]["message"]}'
+                )
                 return
 
-            newest_version = max(
-                versions, key=lambda p: p[0], default=(None, None)
-            )[1]
-            if not newest_version:
-                return
+            result: dict[str, str | list] = requests.get(
+                f"https://ghcr.io/v2/{user}/{image}/tags/list",
+                headers={"Authorization": f"Bearer {token}"},
+            ).json()
+            versions = result["tags"]
 
-            container["image"] = f"{full_image}:{newest_version}"
-            return full_image, image, newest_version
+        if not versions:
+            return
+
+        versions = [
+            (v, version)
+            for version in versions
+            if (v := parse_version(extract_version(version, version_regex)))
+            and v > current_version
+        ]
+
+        if not versions:
+            return
+
+        newest_version = max(
+            versions, key=lambda p: p[0], default=(None, None)
+        )[1]
+        if not newest_version:
+            return
+
+        container["image"] = f"{full_image}:{newest_version}"
+        return full_image, image, newest_version
 
         # TODO: Support other registries.
 
