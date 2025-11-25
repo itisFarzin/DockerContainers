@@ -5,5 +5,6 @@ network_driver: bridge
 subnet: 172.20.0.0/24
 restart_policy: unless-stopped
 use_full_directory: true
+capitalize_folder_name: false
 bind_path: /home/docker/Docker
 output: docker-compose.yaml
